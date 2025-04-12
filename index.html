@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital World Clock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            background-color: #1e1e2e;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #89b4fa;
+        }
+        
+        .clock-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .clock {
+            background-color: #313244;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+        
+        .clock:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .city-name {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #f5c2e7;
+        }
+        
+        .time {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        
+        .date {
+            font-size: 1rem;
+            color: #a6adc8;
+        }
+        
+        .controls {
+            margin: 2rem 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .btn {
+            background-color: #89b4fa;
+            color: #1e1e2e;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        .btn:hover {
+            background-color: #b4befe;
+        }
+        
+        .custom-timezone {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        input, select {
+            padding: 0.75rem;
+            border-radius: 5px;
+            border: 1px solid #585b70;
+            background-color: #313244;
+            color: #fff;
+        }
+        
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+            color: #a6adc8;
+        }
+        
+        @media (max-width: 768px) {
+            .clock-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .time {
+                font-size: 2rem;
+            }
+            
+            .custom-timezone {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+        .people-names {
+            font-size: 0.9rem;
+            color: #89dceb;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Digital World Clock</h1>
+        
+        <div class="controls">
+            <button class="btn" id="add-clock">Add Custom Timezone</button>
+            <button class="btn" id="toggle-seconds">Show/Hide Seconds</button>
+            <button class="btn" id="toggle-format">12h/24h Format</button>
+        </div>
+        
+        <div id="custom-timezone-form" style="display: none; flex-direction: column; gap: 10px;">
+            <input type="text" id="city-input" placeholder="Enter city name">
+            <input type="text" id="people-input" placeholder="Enter people names (comma separated)">
+            <select id="region-select"></select>
+            <select id="timezone-select"></select>
+            <button class="btn" id="add-custom-clock">Add Clock</button>
+        </div>
+        
+        
+        <div class="clock-grid" id="clock-container">
+            <!-- Clocks will be added here by JavaScript -->
+        </div>
+    </div>
+    
+    <footer>
+        <p>Digital World Clock &copy; 2025</p>
+    </footer>
+
+    <script>
+        // Complete list of time zones organized by region
+const allTimezones = {
+    "Africa": [
+        "Africa/Abidjan", "Africa/Accra", "Africa/Addis_Ababa", "Africa/Algiers", "Africa/Asmara",
+        "Africa/Bamako", "Africa/Bangui", "Africa/Banjul", "Africa/Bissau", "Africa/Blantyre",
+        "Africa/Brazzaville", "Africa/Bujumbura", "Africa/Cairo", "Africa/Casablanca", "Africa/Ceuta",
+        "Africa/Conakry", "Africa/Dakar", "Africa/Dar_es_Salaam", "Africa/Djibouti", "Africa/Douala",
+        "Africa/El_Aaiun", "Africa/Freetown", "Africa/Gaborone", "Africa/Harare", "Africa/Johannesburg",
+        "Africa/Juba", "Africa/Kampala", "Africa/Khartoum", "Africa/Kigali", "Africa/Kinshasa",
+        "Africa/Lagos", "Africa/Libreville", "Africa/Lome", "Africa/Luanda", "Africa/Lubumbashi",
+        "Africa/Lusaka", "Africa/Malabo", "Africa/Maputo", "Africa/Maseru", "Africa/Mbabane",
+        "Africa/Mogadishu", "Africa/Monrovia", "Africa/Nairobi", "Africa/Ndjamena", "Africa/Niamey",
+        "Africa/Nouakchott", "Africa/Ouagadougou", "Africa/Porto-Novo", "Africa/Sao_Tome", "Africa/Tripoli",
+        "Africa/Tunis", "Africa/Windhoek"
+    ],
+    "America": [
+        "America/Adak", "America/Anchorage", "America/Anguilla", "America/Antigua", "America/Araguaina",
+        "America/Argentina/Buenos_Aires", "America/Argentina/Catamarca", "America/Argentina/Cordoba",
+        "America/Argentina/Jujuy", "America/Argentina/La_Rioja", "America/Argentina/Mendoza",
+        "America/Argentina/Rio_Gallegos", "America/Argentina/Salta", "America/Argentina/San_Juan",
+        "America/Argentina/San_Luis", "America/Argentina/Tucuman", "America/Argentina/Ushuaia",
+        "America/Aruba", "America/Asuncion", "America/Atikokan", "America/Bahia", "America/Bahia_Banderas",
+        "America/Barbados", "America/Belem", "America/Belize", "America/Blanc-Sablon", "America/Boa_Vista",
+        "America/Bogota", "America/Boise", "America/Cambridge_Bay", "America/Campo_Grande", "America/Cancun",
+        "America/Caracas", "America/Cayenne", "America/Cayman", "America/Chicago", "America/Chihuahua",
+        "America/Costa_Rica", "America/Creston", "America/Cuiaba", "America/Curacao", "America/Danmarkshavn",
+        "America/Dawson", "America/Dawson_Creek", "America/Denver", "America/Detroit", "America/Dominica",
+        "America/Edmonton", "America/Eirunepe", "America/El_Salvador", "America/Fort_Nelson",
+        "America/Fortaleza", "America/Glace_Bay", "America/Goose_Bay", "America/Grand_Turk",
+        "America/Grenada", "America/Guadeloupe", "America/Guatemala", "America/Guayaquil", "America/Guyana",
+        "America/Halifax", "America/Havana", "America/Hermosillo", "America/Indiana/Indianapolis",
+        "America/Indiana/Knox", "America/Indiana/Marengo", "America/Indiana/Petersburg",
+        "America/Indiana/Tell_City", "America/Indiana/Vevay", "America/Indiana/Vincennes",
+        "America/Indiana/Winamac", "America/Inuvik", "America/Iqaluit", "America/Jamaica", "America/Juneau",
+        "America/Kentucky/Louisville", "America/Kentucky/Monticello", "America/Kralendijk", "America/La_Paz",
+        "America/Lima", "America/Los_Angeles", "America/Lower_Princes", "America/Maceio", "America/Managua",
+        "America/Manaus", "America/Marigot", "America/Martinique", "America/Matamoros", "America/Mazatlan",
+        "America/Menominee", "America/Merida", "America/Metlakatla", "America/Mexico_City",
+        "America/Miquelon", "America/Moncton", "America/Monterrey", "America/Montevideo",
+        "America/Montserrat", "America/Nassau", "America/New_York", "America/Nipigon", "America/Nome",
+        "America/Noronha", "America/North_Dakota/Beulah", "America/North_Dakota/Center",
+        "America/North_Dakota/New_Salem", "America/Nuuk", "America/Ojinaga", "America/Panama",
+        "America/Pangnirtung", "America/Paramaribo", "America/Phoenix", "America/Port-au-Prince",
+        "America/Port_of_Spain", "America/Porto_Velho", "America/Puerto_Rico", "America/Punta_Arenas",
+        "America/Rainy_River", "America/Rankin_Inlet", "America/Recife", "America/Regina", "America/Resolute",
+        "America/Rio_Branco", "America/Santarem", "America/Santiago", "America/Santo_Domingo",
+        "America/Sao_Paulo", "America/Scoresbysund", "America/Sitka", "America/St_Barthelemy",
+        "America/St_Johns", "America/St_Kitts", "America/St_Lucia", "America/St_Thomas", "America/St_Vincent",
+        "America/Swift_Current", "America/Tegucigalpa", "America/Thule", "America/Thunder_Bay",
+        "America/Tijuana", "America/Toronto", "America/Tortola", "America/Vancouver", "America/Whitehorse",
+        "America/Winnipeg", "America/Yakutat", "America/Yellowknife"
+    ],
+    "Antarctica": [
+        "Antarctica/Casey", "Antarctica/Davis", "Antarctica/DumontDUrville", "Antarctica/Macquarie",
+        "Antarctica/Mawson", "Antarctica/McMurdo", "Antarctica/Palmer", "Antarctica/Rothera",
+        "Antarctica/Syowa", "Antarctica/Troll", "Antarctica/Vostok"
+    ],
+    "Arctic": [
+        "Arctic/Longyearbyen"
+    ],
+    "Asia": [
+        "Asia/Aden", "Asia/Almaty", "Asia/Amman", "Asia/Anadyr", "Asia/Aqtau", "Asia/Aqtobe",
+        "Asia/Ashgabat", "Asia/Atyrau", "Asia/Baghdad", "Asia/Bahrain", "Asia/Baku", "Asia/Bangkok",
+        "Asia/Barnaul", "Asia/Beirut", "Asia/Bishkek", "Asia/Brunei", "Asia/Chita", "Asia/Choibalsan",
+        "Asia/Colombo", "Asia/Damascus", "Asia/Dhaka", "Asia/Dili", "Asia/Dubai", "Asia/Dushanbe",
+        "Asia/Famagusta", "Asia/Gaza", "Asia/Hebron", "Asia/Ho_Chi_Minh", "Asia/Hong_Kong", "Asia/Hovd",
+        "Asia/Irkutsk", "Asia/Jakarta", "Asia/Jayapura", "Asia/Jerusalem", "Asia/Kabul", "Asia/Kamchatka",
+        "Asia/Karachi", "Asia/Kathmandu", "Asia/Khandyga", "Asia/Kolkata", "Asia/Krasnoyarsk",
+        "Asia/Kuala_Lumpur", "Asia/Kuching", "Asia/Kuwait", "Asia/Macau", "Asia/Magadan", "Asia/Makassar",
+        "Asia/Manila", "Asia/Muscat", "Asia/Nicosia", "Asia/Novokuznetsk", "Asia/Novosibirsk", "Asia/Omsk",
+        "Asia/Oral", "Asia/Phnom_Penh", "Asia/Pontianak", "Asia/Pyongyang", "Asia/Qatar", "Asia/Qostanay",
+        "Asia/Qyzylorda", "Asia/Riyadh", "Asia/Sakhalin", "Asia/Samarkand", "Asia/Seoul", "Asia/Shanghai",
+        "Asia/Singapore", "Asia/Srednekolymsk", "Asia/Taipei", "Asia/Tashkent", "Asia/Tbilisi",
+        "Asia/Tehran", "Asia/Thimphu", "Asia/Tokyo", "Asia/Tomsk", "Asia/Ulaanbaatar", "Asia/Urumqi",
+        "Asia/Ust-Nera", "Asia/Vientiane", "Asia/Vladivostok", "Asia/Yakutsk", "Asia/Yangon",
+        "Asia/Yekaterinburg", "Asia/Yerevan"
+    ],
+    "Atlantic": [
+        "Atlantic/Azores", "Atlantic/Bermuda", "Atlantic/Canary", "Atlantic/Cape_Verde", "Atlantic/Faroe",
+        "Atlantic/Madeira", "Atlantic/Reykjavik", "Atlantic/South_Georgia", "Atlantic/St_Helena",
+        "Atlantic/Stanley"
+    ],
+    "Australia": [
+        "Australia/Adelaide", "Australia/Brisbane", "Australia/Broken_Hill", "Australia/Darwin",
+        "Australia/Eucla", "Australia/Hobart", "Australia/Lindeman", "Australia/Lord_Howe",
+        "Australia/Melbourne", "Australia/Perth", "Australia/Sydney"
+    ],
+    "Europe": [
+        "Europe/Amsterdam", "Europe/Andorra", "Europe/Astrakhan", "Europe/Athens", "Europe/Belgrade",
+        "Europe/Berlin", "Europe/Bratislava", "Europe/Brussels", "Europe/Bucharest", "Europe/Budapest",
+        "Europe/Busingen", "Europe/Chisinau", "Europe/Copenhagen", "Europe/Dublin", "Europe/Gibraltar",
+        "Europe/Guernsey", "Europe/Helsinki", "Europe/Isle_of_Man", "Europe/Istanbul", "Europe/Jersey",
+        "Europe/Kaliningrad", "Europe/Kiev", "Europe/Kirov", "Europe/Lisbon", "Europe/Ljubljana",
+        "Europe/London", "Europe/Luxembourg", "Europe/Madrid", "Europe/Malta", "Europe/Mariehamn",
+        "Europe/Minsk", "Europe/Monaco", "Europe/Moscow", "Europe/Oslo", "Europe/Paris", "Europe/Podgorica",
+        "Europe/Prague", "Europe/Riga", "Europe/Rome", "Europe/Samara", "Europe/San_Marino",
+        "Europe/Sarajevo", "Europe/Saratov", "Europe/Simferopol", "Europe/Skopje", "Europe/Sofia",
+        "Europe/Stockholm", "Europe/Tallinn", "Europe/Tirane", "Europe/Ulyanovsk", "Europe/Uzhgorod",
+        "Europe/Vaduz", "Europe/Vatican", "Europe/Vienna", "Europe/Vilnius", "Europe/Volgograd",
+        "Europe/Warsaw", "Europe/Zagreb", "Europe/Zaporozhye", "Europe/Zurich"
+    ],
+    "Indian": [
+        "Indian/Antananarivo", "Indian/Chagos", "Indian/Christmas", "Indian/Cocos", "Indian/Comoro",
+        "Indian/Kerguelen", "Indian/Mahe", "Indian/Maldives", "Indian/Mauritius", "Indian/Mayotte",
+        "Indian/Reunion"
+    ],
+    "Pacific": [
+        "Pacific/Apia", "Pacific/Auckland", "Pacific/Bougainville", "Pacific/Chatham", "Pacific/Chuuk",
+        "Pacific/Easter", "Pacific/Efate", "Pacific/Enderbury", "Pacific/Fakaofo", "Pacific/Fiji",
+        "Pacific/Funafuti", "Pacific/Galapagos", "Pacific/Gambier", "Pacific/Guadalcanal", "Pacific/Guam",
+        "Pacific/Honolulu", "Pacific/Kiritimati", "Pacific/Kosrae", "Pacific/Kwajalein", "Pacific/Majuro",
+        "Pacific/Marquesas", "Pacific/Midway", "Pacific/Nauru", "Pacific/Niue", "Pacific/Norfolk",
+        "Pacific/Noumea", "Pacific/Pago_Pago", "Pacific/Palau", "Pacific/Pitcairn", "Pacific/Pohnpei",
+        "Pacific/Port_Moresby", "Pacific/Rarotonga", "Pacific/Saipan", "Pacific/Tahiti", "Pacific/Tarawa",
+        "Pacific/Tongatapu", "Pacific/Wake", "Pacific/Wallis"
+    ],
+    "UTC": [
+        "UTC"
+    ]
+};
+
+// Function to get all timezones as a flat array
+function getAllTimezonesArray() {
+    return Object.values(allTimezones).flat();
+}
+
+// Default cities with their timezones and people who live there
+const defaultCities = [
+{ name: "PST - Los Angeles", timezone: "America/Los_Angeles", people: ["Jake", "Sophia"] }, // PST
+{ name: "MST - Denver", timezone: "America/Denver", people: ["Steve", "Emily"] }, // MST
+{ name: "CST - Chicago", timezone: "America/Chicago", people: ["Mark", "Rachel"] }, // CST
+{ name: "EST - New York", timezone: "America/New_York", people: ["John", "Sarah"] }, // EST
+    
+    
+    
+    { name: "London", timezone: "Europe/London", people: ["James", "Emma"] },
+    { name: "Tokyo", timezone: "Asia/Tokyo", people: ["Akira", "Yuki"] },
+    { name: "Sydney", timezone: "Australia/Sydney", people: ["Michael", "Olivia"] },
+    { name: "Paris", timezone: "Europe/Paris", people: ["Pierre", "Sophie"] },
+    { name: "Dubai", timezone: "Asia/Dubai", people: ["Ali", "Fatima"] }
+];
+
+
+// Configuration
+let showSeconds = false;
+let use24HourFormat = false;
+
+// DOM elements
+const clockContainer = document.getElementById('clock-container');
+const addClockBtn = document.getElementById('add-clock');
+const toggleSecondsBtn = document.getElementById('toggle-seconds');
+const toggleFormatBtn = document.getElementById('toggle-format');
+const customTimezoneForm = document.getElementById('custom-timezone-form');
+const cityInput = document.getElementById('city-input');
+const peopleInput = document.getElementById('people-input'); // New input for people
+const regionSelect = document.getElementById('region-select');
+const timezoneSelect = document.getElementById('timezone-select');
+const addCustomClockBtn = document.getElementById('add-custom-clock');
+
+// Initialize region dropdown
+function initRegionDropdown() {
+    // Clear existing options
+    regionSelect.innerHTML = '<option value="">Select region...</option>';
+    
+    // Add options for each region
+    Object.keys(allTimezones).forEach(region => {
+        const option = document.createElement('option');
+        option.value = region;
+        option.textContent = region;
+        regionSelect.appendChild(option);
+    });
+    
+    // Event listener for region selection
+    regionSelect.addEventListener('change', () => {
+        const selectedRegion = regionSelect.value;
+        
+        // Clear timezone dropdown
+        timezoneSelect.innerHTML = '<option value="">Select timezone...</option>';
+        
+        if (selectedRegion) {
+            // Add timezone options for the selected region
+            allTimezones[selectedRegion].forEach(timezone => {
+                const option = document.createElement('option');
+                option.value = timezone;
+                option.textContent = timezone.replace(selectedRegion + '/', '');
+                timezoneSelect.appendChild(option);
+            });
+        }
+    });
+}
+
+// Create clock element for a city
+function createClock(city, timezone, people = []) {
+    const clockElement = document.createElement('div');
+    clockElement.classList.add('clock');
+    
+    const cityNameElement = document.createElement('div');
+    cityNameElement.classList.add('city-name');
+    cityNameElement.textContent = city;
+    
+    // Create people element (new addition)
+    const peopleElement = document.createElement('div');
+    peopleElement.classList.add('people-names');
+    
+    if (people.length > 0) {
+        const peopleText = people.join(', ');
+        peopleElement.textContent = peopleText;
+    } else {
+        peopleElement.textContent = "No people added";
+        peopleElement.style.fontStyle = "italic";
+        peopleElement.style.opacity = "0.7";
+    }
+    
+    const timeElement = document.createElement('div');
+    timeElement.classList.add('time');
+    timeElement.dataset.timezone = timezone;
+    
+    const dateElement = document.createElement('div');
+    dateElement.classList.add('date');
+    dateElement.dataset.timezone = timezone;
+    
+    clockElement.appendChild(cityNameElement);
+    clockElement.appendChild(peopleElement); // Add people element
+    clockElement.appendChild(timeElement);
+    clockElement.appendChild(dateElement);
+    
+    // Add edit button for people
+    const editBtn = document.createElement('button');
+    editBtn.textContent = '✎';
+    editBtn.style.position = 'absolute';
+    editBtn.style.top = '10px';
+    editBtn.style.right = '40px';
+    editBtn.style.background = 'transparent';
+    editBtn.style.border = 'none';
+    editBtn.style.color = '#89dceb';
+    editBtn.style.fontSize = '1.2rem';
+    editBtn.style.cursor = 'pointer';
+    editBtn.addEventListener('click', () => {
+        // Create a popup to edit people
+        const newPeopleString = prompt("Enter people's names (comma separated):", people.join(', '));
+        if (newPeopleString !== null) {
+            const newPeople = newPeopleString.split(',').map(name => name.trim()).filter(name => name);
+            peopleElement.textContent = newPeople.length > 0 ? newPeople.join(', ') : "No people added";
+            if (newPeople.length === 0) {
+                peopleElement.style.fontStyle = "italic";
+                peopleElement.style.opacity = "0.7";
+            } else {
+                peopleElement.style.fontStyle = "normal";
+                peopleElement.style.opacity = "1";
+            }
+        }
+    });
+    
+    // Add remove button
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '×';
+    removeBtn.style.position = 'absolute';
+    removeBtn.style.top = '10px';
+    removeBtn.style.right = '10px';
+    removeBtn.style.background = 'transparent';
+    removeBtn.style.border = 'none';
+    removeBtn.style.color = '#f38ba8';
+    removeBtn.style.fontSize = '1.5rem';
+    removeBtn.style.cursor = 'pointer';
+    removeBtn.addEventListener('click', () => {
+        clockElement.remove();
+    });
+    
+    clockElement.appendChild(editBtn);
+    clockElement.appendChild(removeBtn);
+    clockContainer.appendChild(clockElement);
+    
+    return { timeElement, dateElement };
+}
+
+// Update all clocks
+function updateClocks() {
+    const timeElements = document.querySelectorAll('.time');
+    const dateElements = document.querySelectorAll('.date');
+    
+    timeElements.forEach((element, index) => {
+        const timezone = element.dataset.timezone;
+        const options = {
+            timeZone: timezone,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: !use24HourFormat
+        };
+        
+        if (showSeconds) {
+            options.second = '2-digit';
+        }
+        
+        const timeString = new Date().toLocaleTimeString('en-US', options);
+        element.textContent = timeString;
+        
+        // Update date
+        const dateOptions = {
+            timeZone: timezone,
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        };
+        const dateString = new Date().toLocaleDateString('en-US', dateOptions);
+        dateElements[index].textContent = dateString;
+    });
+}
+
+// Initialize the clock
+function initClock() {
+    // Initialize the region dropdown
+    initRegionDropdown();
+    
+    // Initialize default clocks
+    defaultCities.forEach(city => {
+        createClock(city.name, city.timezone, city.people);
+    });
+    
+    // Update clocks every second
+    updateClocks();
+    setInterval(updateClocks, 1000);
+}
+
+// Event listeners
+addClockBtn.addEventListener('click', () => {
+    customTimezoneForm.style.display = customTimezoneForm.style.display === 'none' ? 'flex' : 'none';
+});
+
+toggleSecondsBtn.addEventListener('click', () => {
+    showSeconds = !showSeconds;
+});
+
+toggleFormatBtn.addEventListener('click', () => {
+    use24HourFormat = !use24HourFormat;
+});
+
+addCustomClockBtn.addEventListener('click', () => {
+    const city = cityInput.value.trim();
+    const timezone = timezoneSelect.value;
+    const peopleString = peopleInput.value.trim(); // Get people input
+    
+    if (city && timezone) {
+        // Parse people names from comma-separated string
+        const people = peopleString ? peopleString.split(',').map(name => name.trim()) : [];
+        
+        createClock(city, timezone, people);
+        cityInput.value = '';
+        peopleInput.value = ''; // Clear people input
+        regionSelect.selectedIndex = 0;
+        timezoneSelect.innerHTML = '<option value="">Select timezone...</option>';
+        customTimezoneForm.style.display = 'none';
+    } else {
+        alert('Please enter both city name and timezone');
+    }
+});
+
+// Initialize the clock when the page loads
+document.addEventListener('DOMContentLoaded', initClock);
+    </script>
+</body>
+</html>
