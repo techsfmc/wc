@@ -47,15 +47,16 @@
       font-size:1.5rem; cursor:pointer;
     }
     .pill { padding:.55rem .8rem; border-radius:999px; border:1px solid #585b70; background:#313244; }
+    /* Bottom section */
+    .bottom-actions { margin-top:1.5rem; display:flex; flex-direction:column; align-items:center; gap:1rem; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Digital World Clock</h1>
 
+    <!-- Top controls (seconds button removed) -->
     <div class="controls">
-      <!-- <button class="btn" id="add-clock">Add Custom Timezone</button> -->
-      <!-- <button class="btn" id="toggle-seconds">Show/Hide Seconds</button> -->
       <button class="btn" id="toggle-format">12h/24h Format</button>
       <button class="btn" id="reset-now">Now</button>
     </div>
@@ -67,14 +68,19 @@
       <span id="shift-display" aria-live="polite">Current shift: 0</span>
     </div>
 
-    <div id="custom-timezone-form" style="display:none; flex-direction:column; gap:10px; margin:1rem 0;">
-      <input type="text" id="city-input" placeholder="Enter city name"/>
-      <select id="region-select"></select>
-      <select id="timezone-select"></select>
-      <button class="btn" id="add-custom-clock">Add Clock</button>
-    </div>
-
     <div class="clock-grid" id="clock-container"></div>
+
+    <!-- Bottom: Add Custom Timezone button + form -->
+    <div class="bottom-actions">
+      <button class="btn" id="add-clock">Add Custom Timezone</button>
+
+      <div id="custom-timezone-form" style="display:none; flex-direction:column; gap:10px; width:min(520px,100%);">
+        <input type="text" id="city-input" placeholder="Enter city name"/>
+        <select id="region-select"></select>
+        <select id="timezone-select"></select>
+        <button class="btn" id="add-custom-clock">Add Clock</button>
+      </div>
+    </div>
   </div>
 
   <footer><p>Digital World Clock &copy; 2025</p></footer>
@@ -109,14 +115,13 @@
     ];
 
     /* ---------- State ---------- */
-    let showSeconds = false;
+    let showSeconds = false; // kept for editor step sizing (always false since toggle removed)
     let use24HourFormat = false;
     let timeShiftHours = 0; // global shift (in hours) applied to all clocks
 
     /* ---------- Elements ---------- */
     const clockContainer = document.getElementById('clock-container');
-    // const addClockBtn = document.getElementById('add-clock');
-    // const toggleSecondsBtn = document.getElementById('toggle-seconds');
+    const addClockBtn = document.getElementById('add-clock');
     const toggleFormatBtn = document.getElementById('toggle-format');
     const resetNowBtn = document.getElementById('reset-now');
 
@@ -294,14 +299,11 @@
         const currTotalMin = (parts.hour * 60) + parts.minute + (parts.second/60);
         const dayOffsetMin = parseInt(daySel.value, 10) * 1440;
 
-        // Compute delta minutes (desired - current) + day offset
         let deltaMin = (desiredTotalMin - currTotalMin) + dayOffsetMin;
-
-        // Update global shift
         timeShiftHours += (deltaMin / 60);
+
         updateShiftDisplay();
         updateClocks();
-
         pop.remove();
       });
 
@@ -347,11 +349,13 @@
       // Populate region/timezone selectors
       initRegionDropdown();
 
-      // Wire up top controls
+      // Bottom "Add Custom Timezone"
       addClockBtn.addEventListener('click', () => {
-        customForm.style.display = (customForm.style.display === 'none' || !customForm.style.display) ? 'flex' : 'none';
+        const show = (customForm.style.display === 'none' || !customForm.style.display) ? 'flex' : 'none';
+        customForm.style.display = show;
       });
 
+      // Add new clock
       addCustomClockBtn.addEventListener('click', () => {
         const city = cityInput.value.trim();
         const tz = timezoneSelect.value;
@@ -367,22 +371,20 @@
         }
       });
 
-      toggleSecondsBtn.addEventListener('click', () => {
-        showSeconds = !showSeconds;
-        updateClocks();
-      });
-
+      // 12/24h format toggle
       toggleFormatBtn.addEventListener('click', () => {
         use24HourFormat = !use24HourFormat;
         updateClocks();
       });
 
+      // Reset to "now"
       resetNowBtn.addEventListener('click', () => {
         timeShiftHours = 0;
         updateShiftDisplay();
         updateClocks();
       });
 
+      // Apply manual shift
       applyShiftBtn.addEventListener('click', () => {
         const val = parseFloat(shiftInput.value);
         if (!Number.isNaN(val)) {
@@ -392,11 +394,9 @@
         }
       });
 
-      // Also update when user presses Enter inside the number box
+      // Enter to apply shift
       shiftInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          applyShiftBtn.click();
-        }
+        if (e.key === 'Enter') applyShiftBtn.click();
       });
 
       // Initial paint + ticker
